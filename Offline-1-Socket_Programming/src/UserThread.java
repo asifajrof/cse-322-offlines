@@ -176,11 +176,13 @@ public class UserThread extends Thread{
                                 sendFile(fileSend.getFilepath(), fileDLPath);
                             }
                             else{
+                                objOutStream.writeBoolean(fileValid);
                                 sendMessage("Access Denied!!!");
                             }
                         }
                         else{
                             fileValid = false;
+                            objOutStream.writeBoolean(fileValid);
                             sendMessage("No file found with that ID!!!");
                         }
                     }
