@@ -4,7 +4,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -86,7 +85,7 @@ public class UserThread extends Thread{
                 String msg;
                 String sendMsg;
                 while(true){
-                    userSocket.setSoTimeout(60000);
+                    userSocket.setSoTimeout(5*60000);
                     try {
                         msg = (String) objInStream.readObject();
                     } catch (SocketTimeoutException e){
@@ -188,9 +187,82 @@ public class UserThread extends Thread{
                     }
                     else if(msg.equalsIgnoreCase("req")){
                         //request file
+                        sendMsg = "Give short request description:";
+                        sendMessage(sendMsg);
+                        String shortDesc = (String) objInStream.readObject();
+                        System.out.println(shortDesc);
+                        int requestCount = uniqueServerInstance.getFileRequests().size();
+                        Requests newRequest = new Requests(this.user, requestCount, shortDesc);
+                        System.out.println("new request " + requestCount);
+                        uniqueServerInstance.getFileRequests().add(newRequest);
+                        sendMessage("request created with id: " + newRequest.getRequestID());
+
+                        //broadcast request
+                        String broadcastMsg = "New request" + "\n" + "Request id: " + newRequest.getRequestID() +
+                                "\n" + "Short description: " + newRequest.getShortDesc() +
+                                "\n" + "Requester: " + newRequest.getRequester().getUserID();
+                        User eachUser;
+                        for (Map.Entry mapElement : uniqueServerInstance.getAllUserHashMap().entrySet()) {
+                            eachUser = (User) mapElement.getValue();
+                            eachUser.addInInbox(broadcastMsg);
+                        }
                     }
                     else if(msg.equalsIgnoreCase("reqf")){
                         //request fill
+                        if(uniqueServerInstance.getFileRequests().size()==0){
+                            sendMsg = "No request";
+                            sendMessage(sendMsg);
+                        }
+                        else{
+                            sendMsg = "Available requests: ";
+                            for(Requests eachRequest : uniqueServerInstance.getFileRequests()) {
+                                sendMsg += "\n" + eachRequest.getRequestID() + "\t" + eachRequest.getShortDesc() + "\t" + eachRequest.getRequester().getUserID();
+                            }
+                            sendMsg += "\n" + "Enter request ID to fill:";
+                            sendMessage(sendMsg);
+                            String reqID = (String) objInStream.readObject();
+                            Requests fillingRequest = null;
+                            for(Requests eachRequest : uniqueServerInstance.getFileRequests()) {
+                                if(reqID.equalsIgnoreCase(eachRequest.getRequestID())){
+                                    fillingRequest = eachRequest;
+                                    break;
+                                }
+                            }
+                            if(fillingRequest == null){
+                                sendMessage("Invalid id");
+                            }
+                            else{
+                                sendMessage("Enter your file ID to fill:");
+                                String fileID = (String) objInStream.readObject();
+
+                                boolean fileValid = false;
+
+                                //getting file instance
+                                if(uniqueServerInstance.getAllFilesHashMap().containsKey(fileID)) {
+                                    Files fillingFile = uniqueServerInstance.getAllFilesHashMap().get(fileID);
+                                    if(fillingFile.getUploader().equals(user) && fillingFile.isPublic()){
+                                        //self public file
+                                        fileValid = true;
+                                    }
+                                    else{
+                                        fileValid = false;
+                                    }
+                                    objOutStream.writeBoolean(fileValid);
+                                    objOutStream.flush();
+                                    if(fileValid){
+                                        uniqueServerInstance.getFileRequests().remove(fillingRequest);
+                                        fillingRequest.requestFill(fillingFile,this.user);
+                                    }
+                                    else{
+                                        sendMessage("Not your public file!!!");
+                                    }
+                                }
+                                else{
+                                    objOutStream.writeBoolean(false);
+                                    sendMessage("Invalid file ID!!!");
+                                }
+                            }
+                        }
                     }
                     else if(msg.equalsIgnoreCase("lfs")){
                         //lookup files self
@@ -225,12 +297,23 @@ public class UserThread extends Thread{
                     }
                     else if(msg.equalsIgnoreCase("inbox")){
                         //view unread inbox messages
+                        if(this.user.getInbox().size() > 0){
+                            sendMsg = "Unread messages:";
+                            int msgCount = 0;
+                            for(String unreadMsg : this.user.getInbox()){
+                                msgCount++;
+                                sendMsg += "\n" + msgCount + ". " + unreadMsg;
+                            }
+                            this.user.getInbox().clear();
+                        }
+                        else{
+                            sendMsg = "No unread messages";
+                        }
+                        sendMessage(sendMsg);
                     }
                     else{
                         //do nothing
                     }
-//                    Date date = new Date();
-//                    objOutStream.writeObject(date.toString());
 
                 }
             }
@@ -248,7 +331,6 @@ public class UserThread extends Thread{
         }
         catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-            //System.out.println("connection kete dise");
         }
     }
 
@@ -261,7 +343,7 @@ public class UserThread extends Thread{
         return true;
     }
 
-    private void receiveFile(String filepath, long fileSize, boolean isPublic){
+	private void receiveFile(String filepath, long fileSize, boolean isPublic){
         Path p = Paths.get(filepath);
         String fileName;
         if(isPublic) {
@@ -292,6 +374,79 @@ public class UserThread extends Thread{
         }
     }
 
+    // private void receiveFile(String filepath, long fileSize, boolean isPublic){
+        ////check buffer size
+        // try {
+            // long remainingBuffer = TCPServer.MAX_BUFFER_SIZE - TCPServer.USED_BUFFER_SIZE - fileSize;
+            // if(remainingBuffer >= 0) {
+                ////buffer size limit okay
+                // TCPServer.USED_BUFFER_SIZE += fileSize;
+                // objOutStream.writeBoolean(true);
+                // objOutStream.flush();
+                // sendMessage("Upload starting...");
+                // Path p = Paths.get(filepath);
+                // String fileName;
+                // if (isPublic) {
+                    // fileName = Paths.get(user.getUploadPath(), "public", p.getFileName().toString()).toString();
+                // } else {
+                    // fileName = Paths.get(user.getUploadPath(), "private", p.getFileName().toString()).toString();
+                // }
+                // int bytes = 0;
+                // FileOutputStream fileOutStream = new FileOutputStream(fileName);
+
+                // int bufferSize = ThreadLocalRandom.current().nextInt(TCPServer.MIN_CHUNK_SIZE, TCPServer.MAX_CHUNK_SIZE + 1);
+                // objOutStream.writeInt(bufferSize);  //chunk size send
+                // objOutStream.flush();
+
+                // byte[] buffer = new byte[bufferSize];
+                // int ackCount = 0;
+                // int loopcount = 0;
+                // while (fileSize > 0) {
+                    // loopcount++;
+                    // userSocket.setSoTimeout(30*1000);
+                    // try {
+                        // bytes = objInStream.read(buffer, 0, (int) Math.min(buffer.length, fileSize));
+                        // fileOutStream.write(buffer, 0, bytes);
+                        // objOutStream.writeBoolean(true);    //ack
+                        // objOutStream.flush();
+                        // System.out.println("sending ack" + ackCount++);
+                        // fileSize -= bytes;
+                    // } catch (SocketException e){
+                        // objOutStream.writeBoolean(false);
+                        // objOutStream.flush();
+                        // e.printStackTrace();
+                        // break;
+                    // }
+                // }
+                // System.out.println("loopcount:" + loopcount);
+                // String msg = (String) objInStream.readObject();
+                // if(msg.equalsIgnoreCase("done")){
+                    // fileOutStream.close();
+                    // Files receivedFile = new Files(fileName, fileSize, user, isPublic);
+                    // user.addFile(receivedFile);
+                    // uniqueServerInstance.getAllFilesHashMap().put(receivedFile.getFileID(), receivedFile);
+                    // String fileDoneMsg = "Upload Successful!!!" + "\n" + receivedFile.getFileID() + "\t" + receivedFile.getFileName();
+                    // System.out.println(fileDoneMsg);
+                    // sendMessage(fileDoneMsg);
+                // }
+                // else{
+                    // sendMessage("Upload Failed!!!");
+                    // fileOutStream.close();
+                    // File f = new File(fileName);
+                    // f.delete();
+                // }
+                // TCPServer.USED_BUFFER_SIZE -= fileSize;
+            // }
+            // else{
+                // objOutStream.writeBoolean(false);   //buffer limit not okay
+                // objOutStream.flush();
+                // sendMessage("Server busy.\nUpload cancelled!!!");
+            // }
+        // } catch (IOException | ClassNotFoundException e) {
+            // e.printStackTrace();
+        // }
+    // }
+
     private void sendFile(String sourcePath, String destinationPath){
         int bytes = 0;
         try {
@@ -306,7 +461,8 @@ public class UserThread extends Thread{
             objOutStream.writeInt(bufferSize);
             objOutStream.flush();
             byte[] buffer = new byte[bufferSize];
-            while((bytes = fileInputStream.read(buffer)) != -1){
+            
+			while((bytes = fileInputStream.read(buffer)) != -1){
                 objOutStream.write(buffer,0,bytes);
                 objOutStream.flush();
             }

@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -18,20 +19,18 @@ public class TCPServer{
     public HashMap<String, User> getAllUserHashMap() {
         return allUserHashMap;
     }
-    public void setAllUserHashMap(HashMap<String, User> allUserHashMap) {
-        this.allUserHashMap = allUserHashMap;
-    }
 
     private HashMap<String, Files> allFilesHashMap = new HashMap<>();
     public HashMap<String, Files> getAllFilesHashMap() {
         return allFilesHashMap;
     }
-    public void setAllFilesHashMap(HashMap<String, Files> allFilesHashMap) {
-        this.allFilesHashMap = allFilesHashMap;
+
+    private ArrayList<Requests> fileRequests = new ArrayList<>();
+    public ArrayList<Requests> getFileRequests(){
+        return fileRequests;
     }
 
     private Scanner input = new Scanner(System.in);
-    //private ArrayList<Thread> runningThreadList = new ArrayList<>();
     private boolean serverShutDown = false;
 
     private Path serverDirectory = Paths.get(System.getProperty("user.dir"), "Server_Directory");
@@ -39,11 +38,8 @@ public class TCPServer{
         return serverDirectory;
     }
 
-    public void setServerDirectory(Path serverDirectory) {
-        this.serverDirectory = serverDirectory;
-    }
-
     public static int MAX_BUFFER_SIZE = 10*1024*1024;
+    public static int USED_BUFFER_SIZE = 0;
     public static int MIN_CHUNK_SIZE = 1*1024;
     public static int MAX_CHUNK_SIZE = 4*1024;
 
@@ -68,7 +64,6 @@ public class TCPServer{
                     {
                         System.out.println("Server ShutDown!!!");
                         serverShutDown = true;
-                        //shutdownServer();
                         break;
                     }
                 }
@@ -107,14 +102,6 @@ public class TCPServer{
             e.printStackTrace();
         }
     }
-
-//    private void shutdownServer(){
-//        try {
-//            serverSocket.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     public static TCPServer getUniqueServerInstance(){
         return uniqueServerInstance;
