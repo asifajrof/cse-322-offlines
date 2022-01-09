@@ -7706,12 +7706,12 @@
   },
   {
     "directory": "/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build",
-    "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -pthread -I. -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../scratch/scratch-simulator.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/scratch/scratch-simulator.cc.1.o",
+    "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -pthread -I. -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../scratch/scratch-simulator.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/scratch/scratch-simulator.cc.2.o",
     "file": "../scratch/scratch-simulator.cc"
   },
   {
     "directory": "/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build",
-    "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -pthread -I. -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../scratch/subdir/scratch-simulator-subdir.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/scratch/subdir/scratch-simulator-subdir.cc.2.o",
+    "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -pthread -I. -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../scratch/subdir/scratch-simulator-subdir.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/scratch/subdir/scratch-simulator-subdir.cc.3.o",
     "file": "../scratch/subdir/scratch-simulator-subdir.cc"
   },
   {
@@ -7748,5 +7748,10 @@
     "directory": "/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build",
     "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../src/tap-bridge/model/tap-creator.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/src/tap-bridge/model/tap-creator.cc.4.o",
     "file": "../src/tap-bridge/model/tap-creator.cc"
+  },
+  {
+    "directory": "/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build",
+    "command": "/usr/bin/g++ -O0 -ggdb -g3 -Wall -Werror -std=c++17 -fstrict-aliasing -Wstrict-aliasing -pthread -I. -DNS3_BUILD_PROFILE_DEBUG -DNS3_ASSERT_ENABLE -DNS3_LOG_ENABLE -DHAVE_SYS_IOCTL_H=1 -DHAVE_IF_NETS_H=1 -DHAVE_NET_ETHERNET_H=1 -DHAVE_PACKET_H=1 -DHAVE_SEMAPHORE_H=1 -DHAVE_IF_TUN_H=1 -DNS3_ENABLE_EXAMPLES ../scratch/first.cc -c -o/mnt/e/Study/Level-3/L3T2/CSE321-322/322/github_backup/cse-322-offlines/ns3/ns-allinone-3.35/ns-3.35/build/scratch/first.cc.1.o",
+    "file": "../scratch/first.cc"
   }
 ]
