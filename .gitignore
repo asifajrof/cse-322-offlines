@@ -24,5 +24,39 @@ hs_err_pid*
 
 # dia files :/
 *.dia
+# was giving error
 ns3/ns-allinone-3.35/ns-3.35/doc/manual/source/figures
 ns3/ns-allinone-3.35/ns-3.35/doc/tutorial/source/figures
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Prerequisites
+*.d
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.dll
