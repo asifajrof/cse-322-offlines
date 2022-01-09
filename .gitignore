@@ -24,3 +24,5 @@ hs_err_pid*
 
 # dia files :/
 *.dia
+ns3/ns-allinone-3.35/ns-3.35/doc/manual/source/figures
+ns3/ns-allinone-3.35/ns-3.35/doc/tutorial/source/figures
