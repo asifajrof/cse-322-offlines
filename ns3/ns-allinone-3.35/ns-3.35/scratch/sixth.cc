@@ -232,6 +232,7 @@ main (int argc, char *argv[])
   app->SetStopTime (Seconds (20.));
 
   AsciiTraceHelper asciiTraceHelper;
+  pointToPoint.EnableAsciiAll (asciiTraceHelper.CreateFileStream ("sixth.tr"));
   Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("sixth.cwnd");
   ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
 
