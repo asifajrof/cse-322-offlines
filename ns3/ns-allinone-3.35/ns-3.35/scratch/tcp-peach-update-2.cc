@@ -49,6 +49,7 @@
 #include "ns3/internet-stack-helper.h"
 #include "ns3/ipv4-address-helper.h"
 #include "ns3/ipv4-global-routing-helper.h"
+#include "ns3/point-to-point-module.h"
 
 NS_LOG_COMPONENT_DEFINE ("wifi-tcp");
 
@@ -71,22 +72,26 @@ int
 main (int argc, char *argv[])
 {
   uint32_t payloadSize = 1472;                       /* Transport layer payload size in bytes. */
-  std::string dataRate = "100Mbps";                  /* Application layer datarate. */
+  uint32_t dataRate_int = 100;                       /* Application layer datarate. */
   std::string tcpVariant = "TcpNewReno";             /* TCP variant type. */
   std::string phyRate = "HtMcs7";                    /* Physical layer bitrate. */
   double simulationTime = 10;                        /* Simulation time in seconds. */
-  bool pcapTracing = true;                          /* PCAP Tracing is enabled or not. */
+  bool pcapTracing = true;                           /* PCAP Tracing is enabled or not. */
+  uint32_t n_total_nodes = 10;                       /* number of total nodes */
+  uint32_t n_total_flows = 6;                         /* number of total flows */
 
   /* Command line argument parser setup. */
   CommandLine cmd (__FILE__);
   cmd.AddValue ("payloadSize", "Payload size in bytes", payloadSize);
-  cmd.AddValue ("dataRate", "Application data ate", dataRate);
+  cmd.AddValue ("dataRate", "Application data ate", dataRate_int);
   cmd.AddValue ("tcpVariant", "Transport protocol to use: TcpNewReno, "
                 "TcpHybla, TcpHighSpeed, TcpHtcp, TcpVegas, TcpScalable, TcpVeno, "
                 "TcpBic, TcpYeah, TcpIllinois, TcpWestwood, TcpWestwoodPlus, TcpLedbat ", tcpVariant);
   cmd.AddValue ("phyRate", "Physical layer bitrate", phyRate);
   cmd.AddValue ("simulationTime", "Simulation time in seconds", simulationTime);
   cmd.AddValue ("pcap", "Enable/disable PCAP Tracing", pcapTracing);
+  cmd.AddValue ("n_total_nodes", "number of total nodes", n_total_nodes);
+  cmd.AddValue ("n_total_flows", "number of total nodes", n_total_flows);
   cmd.Parse (argc, argv);
 
   tcpVariant = std::string ("ns3::") + tcpVariant;
@@ -108,6 +113,34 @@ main (int argc, char *argv[])
   /* Configure TCP Options */
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (payloadSize));
 
+  /* data rate */
+  std::string dataRate = std::to_string(dataRate_int) + "Mbps";                  /* Application layer datarate. */
+
+  /* node and flow numbers */
+  if (n_total_nodes%2 != 0){
+    n_total_nodes += 1;
+  }
+  uint32_t n_routers = 2;
+  n_total_nodes -= n_routers;
+  uint32_t n_half_nodes = n_total_nodes / 2;
+
+  if (n_total_flows%2 != 0){
+    n_total_flows += 1;
+  }
+  uint32_t n_half_flows = n_total_flows / 2;
+  
+
+  NodeContainer p2pNodes;
+  p2pNodes.Create (n_routers);
+
+  std::string p2p_dataRate = std::to_string(dataRate_int / 5) + "Mbps";
+  PointToPointHelper pointToPoint;
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue (p2p_dataRate));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+
+  NetDeviceContainer p2pDevices;
+  p2pDevices = pointToPoint.Install (p2pNodes);
+
   WifiMacHelper wifiMac;
   WifiHelper wifiHelper;
   wifiHelper.SetStandard (WIFI_STANDARD_80211n_5GHZ);
@@ -125,47 +158,88 @@ main (int argc, char *argv[])
                                       "DataMode", StringValue (phyRate),
                                       "ControlMode", StringValue ("HtMcs0"));
 
-  NodeContainer networkNodes;
-  networkNodes.Create (2);
-  Ptr<Node> apWifiNode = networkNodes.Get (0);
-  Ptr<Node> staWifiNode = networkNodes.Get (1);
+  NodeContainer staWifiNodes_1;
+  staWifiNodes_1.Create (n_half_nodes);
+  // Ptr<Node> apWifiNode = networkNodes.Get (0);
+  // Ptr<Node> staWifiNode = networkNodes.Get (1);
+  NodeContainer apWifiNode_1 = p2pNodes.Get (0);
+
+  NodeContainer staWifiNodes_2;
+  staWifiNodes_2.Create (n_half_nodes);
+  // Ptr<Node> apWifiNode = networkNodes.Get (0);
+  // Ptr<Node> staWifiNode = networkNodes.Get (1);
+  NodeContainer apWifiNode_2 = p2pNodes.Get (1);
 
   /* Configure AP */
-  Ssid ssid = Ssid ("network");
+  Ssid ssid_1 = Ssid ("network");
   wifiMac.SetType ("ns3::ApWifiMac",
-                   "Ssid", SsidValue (ssid));
+                   "Ssid", SsidValue (ssid_1));
 
-  NetDeviceContainer apDevice;
-  apDevice = wifiHelper.Install (wifiPhy, wifiMac, apWifiNode);
+  NetDeviceContainer apDevice_1;
+  apDevice_1 = wifiHelper.Install (wifiPhy, wifiMac, apWifiNode_1);
+
+  Ssid ssid_2 = Ssid ("network");
+  wifiMac.SetType ("ns3::ApWifiMac",
+                   "Ssid", SsidValue (ssid_2));
+
+  NetDeviceContainer apDevice_2;
+  apDevice_2 = wifiHelper.Install (wifiPhy, wifiMac, apWifiNode_2);
 
   /* Configure STA */
   wifiMac.SetType ("ns3::StaWifiMac",
-                   "Ssid", SsidValue (ssid));
+                   "Ssid", SsidValue (ssid_1));
 
-  NetDeviceContainer staDevices;
-  staDevices = wifiHelper.Install (wifiPhy, wifiMac, staWifiNode);
+  NetDeviceContainer staDevices_1;
+  staDevices_1 = wifiHelper.Install (wifiPhy, wifiMac, staWifiNodes_1);
+
+  wifiMac.SetType ("ns3::StaWifiMac",
+                   "Ssid", SsidValue (ssid_2));
+
+  NetDeviceContainer staDevices_2;
+  staDevices_2 = wifiHelper.Install (wifiPhy, wifiMac, staWifiNodes_2);
 
   /* Mobility model */
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-  positionAlloc->Add (Vector (1.0, 1.0, 0.0));
-
+  for(int i=0; i< n_half_nodes*2 + n_routers; ++i){
+    positionAlloc->Add (Vector (0.0 + i, 0.0, 0.0));
+  }
+  
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (apWifiNode);
-  mobility.Install (staWifiNode);
+  
+  mobility.Install (staWifiNodes_1);
+  mobility.Install (apWifiNode_1);
+
+  mobility.Install (staWifiNodes_2);
+  mobility.Install (apWifiNode_2);
 
   /* Internet stack */
   InternetStackHelper stack;
-  stack.Install (networkNodes);
+  stack.Install (staWifiNodes_1);
+  stack.Install (apWifiNode_1);
+
+  stack.Install (staWifiNodes_2);
+  stack.Install (apWifiNode_2);
 
   Ipv4AddressHelper address;
-  address.SetBase ("10.0.0.0", "255.255.255.0");
-  Ipv4InterfaceContainer apInterface;
-  apInterface = address.Assign (apDevice);
-  Ipv4InterfaceContainer staInterface;
-  staInterface = address.Assign (staDevices);
+  address.SetBase ("10.1.0.0", "255.255.255.0");
+  Ipv4InterfaceContainer p2pInterfaces;
+  p2pInterfaces = address.Assign (p2pDevices);
+
+  Ipv4AddressHelper address_1;
+  address_1.SetBase ("10.1.1.0", "255.255.255.0");
+  Ipv4InterfaceContainer apInterface_1;
+  apInterface_1 = address_1.Assign (apDevice_1);
+  Ipv4InterfaceContainer staInterface_1;
+  staInterface_1 = address_1.Assign (staDevices_1);
+
+  Ipv4AddressHelper address_2;
+  address_1.SetBase ("10.1.2.0", "255.255.255.0");
+  Ipv4InterfaceContainer apInterface_2;
+  apInterface_2 = address_2.Assign (apDevice_2);
+  Ipv4InterfaceContainer staInterface_2;
+  staInterface_2 = address_2.Assign (staDevices_2);
 
   /* Populate routing table */
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
