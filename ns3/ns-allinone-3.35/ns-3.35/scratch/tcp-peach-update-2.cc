@@ -485,11 +485,6 @@ main (int argc, char *argv[])
 
   Simulator::Destroy ();
 
-  if (averageThroughput < 50)
-    {
-      NS_LOG_ERROR ("Obtained throughput is not in the expected boundaries!");
-      exit (1);
-    }
   std::cout << "\nAverage throughput: " << averageThroughput << " Mbit/s" << std::endl;
   return 0;
 }
