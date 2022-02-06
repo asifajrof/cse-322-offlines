@@ -59,121 +59,121 @@ Ptr<PacketSink> sink;                         /* Pointer to the packet sink appl
 uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
 
 
-class MyApp : public Application
-{
-public:
-  MyApp ();
-  virtual ~MyApp ();
+// class MyApp : public Application
+// {
+// public:
+//   MyApp ();
+//   virtual ~MyApp ();
 
-  /**
-   * Register this type.
-   * \return The TypeId.
-   */
-  static TypeId GetTypeId (void);
-  void Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
+//   /**
+//    * Register this type.
+//    * \return The TypeId.
+//    */
+//   static TypeId GetTypeId (void);
+//   void Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
 
-private:
-  virtual void StartApplication (void);
-  virtual void StopApplication (void);
+// private:
+//   virtual void StartApplication (void);
+//   virtual void StopApplication (void);
 
-  void ScheduleTx (void);
-  void SendPacket (void);
+//   void ScheduleTx (void);
+//   void SendPacket (void);
 
-  Ptr<Socket>     m_socket;
-  Address         m_peer;
-  uint32_t        m_packetSize;
-  uint32_t        m_nPackets;
-  DataRate        m_dataRate;
-  EventId         m_sendEvent;
-  bool            m_running;
-  uint32_t        m_packetsSent;
-};
+//   Ptr<Socket>     m_socket;
+//   Address         m_peer;
+//   uint32_t        m_packetSize;
+//   uint32_t        m_nPackets;
+//   DataRate        m_dataRate;
+//   EventId         m_sendEvent;
+//   bool            m_running;
+//   uint32_t        m_packetsSent;
+// };
 
-MyApp::MyApp ()
-  : m_socket (0),
-    m_peer (),
-    m_packetSize (0),
-    m_nPackets (0),
-    m_dataRate (0),
-    m_sendEvent (),
-    m_running (false),
-    m_packetsSent (0)
-{
-}
+// MyApp::MyApp ()
+//   : m_socket (0),
+//     m_peer (),
+//     m_packetSize (0),
+//     m_nPackets (0),
+//     m_dataRate (0),
+//     m_sendEvent (),
+//     m_running (false),
+//     m_packetsSent (0)
+// {
+// }
 
-MyApp::~MyApp ()
-{
-  m_socket = 0;
-}
+// MyApp::~MyApp ()
+// {
+//   m_socket = 0;
+// }
 
-/* static */
-TypeId MyApp::GetTypeId (void)
-{
-  static TypeId tid = TypeId ("MyApp")
-    .SetParent<Application> ()
-    .SetGroupName ("Tutorial")
-    .AddConstructor<MyApp> ()
-    ;
-  return tid;
-}
+// /* static */
+// TypeId MyApp::GetTypeId (void)
+// {
+//   static TypeId tid = TypeId ("MyApp")
+//     .SetParent<Application> ()
+//     .SetGroupName ("Tutorial")
+//     .AddConstructor<MyApp> ()
+//     ;
+//   return tid;
+// }
 
-void
-MyApp::Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
-{
-  m_socket = socket;
-  m_peer = address;
-  m_packetSize = packetSize;
-  m_nPackets = nPackets;
-  m_dataRate = dataRate;
-}
+// void
+// MyApp::Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
+// {
+//   m_socket = socket;
+//   m_peer = address;
+//   m_packetSize = packetSize;
+//   m_nPackets = nPackets;
+//   m_dataRate = dataRate;
+// }
 
-void
-MyApp::StartApplication (void)
-{
-  m_running = true;
-  m_packetsSent = 0;
-  m_socket->Bind ();
-  m_socket->Connect (m_peer);
-  SendPacket ();
-}
+// void
+// MyApp::StartApplication (void)
+// {
+//   m_running = true;
+//   m_packetsSent = 0;
+//   m_socket->Bind ();
+//   m_socket->Connect (m_peer);
+//   SendPacket ();
+// }
 
-void
-MyApp::StopApplication (void)
-{
-  m_running = false;
+// void
+// MyApp::StopApplication (void)
+// {
+//   m_running = false;
 
-  if (m_sendEvent.IsRunning ())
-    {
-      Simulator::Cancel (m_sendEvent);
-    }
+//   if (m_sendEvent.IsRunning ())
+//     {
+//       Simulator::Cancel (m_sendEvent);
+//     }
 
-  if (m_socket)
-    {
-      m_socket->Close ();
-    }
-}
+//   if (m_socket)
+//     {
+//       m_socket->Close ();
+//     }
+// }
 
-void
-MyApp::SendPacket (void)
-{
-  Ptr<Packet> packet = Create<Packet> (m_packetSize);
-  m_socket->Send (packet);
+// void
+// MyApp::SendPacket (void)
+// {
+//   Ptr<Packet> packet = Create<Packet> (m_packetSize);
+//   m_socket->Send (packet);
 
-  if (++m_packetsSent < m_nPackets)
-    {
-      ScheduleTx ();
-    }
-}
+//   if (++m_packetsSent < m_nPackets)
+//     {
+//       ScheduleTx ();
+//     }
+// }
 
-void
-MyApp::ScheduleTx (void)
-{
-  if (m_running)
-    {
-      Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
-      m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
-    }
-}
+// void
+// MyApp::ScheduleTx (void)
+// {
+//   if (m_running)
+//     {
+//       Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
+//       m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
+//     }
+// }
 
 
 void
@@ -371,22 +371,29 @@ main (int argc, char *argv[])
   sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
   /* Install TCP/UDP Transmitter on the station */
-  // OnOffHelper server ("ns3::TcpSocketFactory", (InetSocketAddress (apInterface.GetAddress (0), 9)));
-  // server.SetAttribute ("PacketSize", UintegerValue (payloadSize));
-  // server.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  // server.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  // server.SetAttribute ("DataRate", DataRateValue (DataRate (dataRate)));
-  // ApplicationContainer serverApp = server.Install (staWifiNode);
 
-  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (staWifiNodes_1.Get (0), TcpSocketFactory::GetTypeId ());
+  /* OnOffHelper(std::string protocol, ns3::Address address)
+   * address – the address of the remote node to send traffic to.
+   * Create an OnOffHelper to make it easier to work with OnOffApplications
+   */
+  // OnOffHelper server ("ns3::TcpSocketFactory", (InetSocketAddress (staInterface_2.GetAddress (0), sinkPort)));
+  OnOffHelper server ("ns3::TcpSocketFactory", sinkAddress);
+  server.SetAttribute ("PacketSize", UintegerValue (payloadSize));
+  server.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  server.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  server.SetAttribute ("DataRate", DataRateValue (DataRate (dataRate)));
+  ApplicationContainer serverApp = server.Install (staWifiNodes_1.Get(0));
 
-  Ptr<MyApp> serverApp = CreateObject<MyApp> ();
-  serverApp->Setup(ns3TcpSocket, sinkAddress, 1040, 1000, DataRate(dataRate));
-  staWifiNodes_1.Get(0)->AddApplication(serverApp);
+  // Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (staWifiNodes_1.Get (0), TcpSocketFactory::GetTypeId ());
+
+  // Ptr<MyApp> serverApp = CreateObject<MyApp> ();
+  // serverApp->Setup(ns3TcpSocket, sinkAddress, 1040, 1000, DataRate(dataRate));
+  // staWifiNodes_1.Get(0)->AddApplication(serverApp);
 
   /* Start Applications */
   sinkApp.Start (Seconds (0.0));
-  serverApp->SetStartTime (Seconds (1.0));
+  serverApp.Start (Seconds (1.0));
+  // serverApp->SetStartTime (Seconds (1.0));
   Simulator::Schedule (Seconds (1.1), &CalculateThroughput);
 
   /* Enable Traces */
