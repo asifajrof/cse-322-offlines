@@ -190,7 +190,7 @@ int
 main (int argc, char *argv[])
 {
   uint32_t payloadSize = 1472;                       /* Transport layer payload size in bytes. */
-  uint32_t dataRate_int = 10;                        /* Application layer datarate. */
+  uint32_t dataRate_int = 100;                        /* Application layer datarate. */
   std::string tcpVariant = "TcpNewReno";             /* TCP variant type. */
   std::string phyRate = "HtMcs7";                    /* Physical layer bitrate. */
   double simulationTime = 10;                        /* Simulation time in seconds. */
@@ -259,9 +259,10 @@ main (int argc, char *argv[])
   NetDeviceContainer p2pDevices;
   p2pDevices = pointToPoint.Install (p2pNodes);
 
-  WifiMacHelper wifiMac;
-  WifiHelper wifiHelper;
-  wifiHelper.SetStandard (WIFI_STANDARD_80211n_5GHZ);
+  WifiMacHelper wifiMac_1, wifiMac_2;
+  WifiHelper wifiHelper_1, wifiHelper_2;
+  wifiHelper_1.SetStandard (WIFI_STANDARD_80211n_5GHZ);
+  wifiHelper_2.SetStandard (WIFI_STANDARD_80211n_5GHZ);
 
   /* Set up Legacy Channel */
   YansWifiChannelHelper wifiChannel;
@@ -269,10 +270,15 @@ main (int argc, char *argv[])
   wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel", "Frequency", DoubleValue (5e9));
 
   /* Setup Physical Layer */
-  YansWifiPhyHelper wifiPhy;
-  wifiPhy.SetChannel (wifiChannel.Create ());
-  wifiPhy.SetErrorRateModel ("ns3::YansErrorRateModel");
-  wifiHelper.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+  YansWifiPhyHelper wifiPhy_1, wifiPhy_2;
+  wifiPhy_1.SetChannel (wifiChannel.Create ());
+  wifiPhy_1.SetErrorRateModel ("ns3::YansErrorRateModel");
+  wifiHelper_1.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+                                      "DataMode", StringValue (phyRate),
+                                      "ControlMode", StringValue ("HtMcs0"));
+  wifiPhy_2.SetChannel (wifiChannel.Create ());
+  wifiPhy_2.SetErrorRateModel ("ns3::YansErrorRateModel");
+  wifiHelper_2.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                       "DataMode", StringValue (phyRate),
                                       "ControlMode", StringValue ("HtMcs0"));
 
@@ -290,31 +296,25 @@ main (int argc, char *argv[])
 
   /* Configure AP */
   Ssid ssid_1 = Ssid ("network");
-  wifiMac.SetType ("ns3::ApWifiMac",
+  wifiMac_1.SetType ("ns3::ApWifiMac",
                    "Ssid", SsidValue (ssid_1));
 
   NetDeviceContainer apDevice_1;
-  apDevice_1 = wifiHelper.Install (wifiPhy, wifiMac, apWifiNode_1);
+  apDevice_1 = wifiHelper_1.Install (wifiPhy_1, wifiMac_1, apWifiNode_1);
 
   Ssid ssid_2 = Ssid ("network");
-  wifiMac.SetType ("ns3::ApWifiMac",
+  wifiMac_2.SetType ("ns3::ApWifiMac",
                    "Ssid", SsidValue (ssid_2));
 
   NetDeviceContainer apDevice_2;
-  apDevice_2 = wifiHelper.Install (wifiPhy, wifiMac, apWifiNode_2);
+  apDevice_2 = wifiHelper_2.Install (wifiPhy_2, wifiMac_2, apWifiNode_2);
 
   /* Configure STA */
-  wifiMac.SetType ("ns3::StaWifiMac",
-                   "Ssid", SsidValue (ssid_1));
-
   NetDeviceContainer staDevices_1;
-  staDevices_1 = wifiHelper.Install (wifiPhy, wifiMac, staWifiNodes_1);
-
-  wifiMac.SetType ("ns3::StaWifiMac",
-                   "Ssid", SsidValue (ssid_2));
+  staDevices_1 = wifiHelper_1.Install (wifiPhy_1, wifiMac_1, staWifiNodes_1);
 
   NetDeviceContainer staDevices_2;
-  staDevices_2 = wifiHelper.Install (wifiPhy, wifiMac, staWifiNodes_2);
+  staDevices_2 = wifiHelper_2.Install (wifiPhy_2, wifiMac_2, staWifiNodes_2);
 
   /* Mobility model */
   MobilityHelper mobility;
@@ -364,9 +364,11 @@ main (int argc, char *argv[])
 
   /* Install TCP Receiver on the access point */
   uint16_t sinkPort = 8080;
+  std::cout << "staInterface_2[0] address: " << staInterface_2.GetAddress (0) << std::endl;
   Address sinkAddress (InetSocketAddress (staInterface_2.GetAddress (0), sinkPort));
 
   PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
+  std::cout << "staWifiNodes_2[0] Node id: " << staWifiNodes_2.Get(0)->GetId() << std::endl;
   ApplicationContainer sinkApp = sinkHelper.Install (staWifiNodes_2.Get(0));
   sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
@@ -399,11 +401,12 @@ main (int argc, char *argv[])
   /* Enable Traces */
   if (pcapTracing)
     {
-      wifiPhy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-      wifiPhy.EnablePcap ("AccessPoint1", apDevice_1);
-      wifiPhy.EnablePcap ("AccessPoint2", apDevice_2);
-      wifiPhy.EnablePcap ("Station1", staDevices_1);
-      wifiPhy.EnablePcap ("Station2", staDevices_2);
+      wifiPhy_1.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
+      wifiPhy_2.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
+      wifiPhy_1.EnablePcap ("AccessPoint1", apDevice_1);
+      wifiPhy_2.EnablePcap ("AccessPoint2", apDevice_2);
+      wifiPhy_1.EnablePcap ("Station1", staDevices_1);
+      wifiPhy_2.EnablePcap ("Station2", staDevices_2);
     }
 
   /* Start Simulation */
