@@ -58,6 +58,124 @@ using namespace ns3;
 Ptr<PacketSink> sink;                         /* Pointer to the packet sink application */
 uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
 
+
+class MyApp : public Application
+{
+public:
+  MyApp ();
+  virtual ~MyApp ();
+
+  /**
+   * Register this type.
+   * \return The TypeId.
+   */
+  static TypeId GetTypeId (void);
+  void Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
+
+private:
+  virtual void StartApplication (void);
+  virtual void StopApplication (void);
+
+  void ScheduleTx (void);
+  void SendPacket (void);
+
+  Ptr<Socket>     m_socket;
+  Address         m_peer;
+  uint32_t        m_packetSize;
+  uint32_t        m_nPackets;
+  DataRate        m_dataRate;
+  EventId         m_sendEvent;
+  bool            m_running;
+  uint32_t        m_packetsSent;
+};
+
+MyApp::MyApp ()
+  : m_socket (0),
+    m_peer (),
+    m_packetSize (0),
+    m_nPackets (0),
+    m_dataRate (0),
+    m_sendEvent (),
+    m_running (false),
+    m_packetsSent (0)
+{
+}
+
+MyApp::~MyApp ()
+{
+  m_socket = 0;
+}
+
+/* static */
+TypeId MyApp::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("MyApp")
+    .SetParent<Application> ()
+    .SetGroupName ("Tutorial")
+    .AddConstructor<MyApp> ()
+    ;
+  return tid;
+}
+
+void
+MyApp::Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
+{
+  m_socket = socket;
+  m_peer = address;
+  m_packetSize = packetSize;
+  m_nPackets = nPackets;
+  m_dataRate = dataRate;
+}
+
+void
+MyApp::StartApplication (void)
+{
+  m_running = true;
+  m_packetsSent = 0;
+  m_socket->Bind ();
+  m_socket->Connect (m_peer);
+  SendPacket ();
+}
+
+void
+MyApp::StopApplication (void)
+{
+  m_running = false;
+
+  if (m_sendEvent.IsRunning ())
+    {
+      Simulator::Cancel (m_sendEvent);
+    }
+
+  if (m_socket)
+    {
+      m_socket->Close ();
+    }
+}
+
+void
+MyApp::SendPacket (void)
+{
+  Ptr<Packet> packet = Create<Packet> (m_packetSize);
+  m_socket->Send (packet);
+
+  if (++m_packetsSent < m_nPackets)
+    {
+      ScheduleTx ();
+    }
+}
+
+void
+MyApp::ScheduleTx (void)
+{
+  if (m_running)
+    {
+      Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
+      m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
+    }
+}
+
+
 void
 CalculateThroughput ()
 {
@@ -72,7 +190,7 @@ int
 main (int argc, char *argv[])
 {
   uint32_t payloadSize = 1472;                       /* Transport layer payload size in bytes. */
-  uint32_t dataRate_int = 100;                       /* Application layer datarate. */
+  uint32_t dataRate_int = 10;                        /* Application layer datarate. */
   std::string tcpVariant = "TcpNewReno";             /* TCP variant type. */
   std::string phyRate = "HtMcs7";                    /* Physical layer bitrate. */
   double simulationTime = 10;                        /* Simulation time in seconds. */
@@ -128,7 +246,7 @@ main (int argc, char *argv[])
     n_total_flows += 1;
   }
   uint32_t n_half_flows = n_total_flows / 2;
-  
+  std::cout<<n_half_flows<<std::endl;
 
   NodeContainer p2pNodes;
   p2pNodes.Create (n_routers);
@@ -201,7 +319,7 @@ main (int argc, char *argv[])
   /* Mobility model */
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  for(int i=0; i< n_half_nodes*2 + n_routers; ++i){
+  for(uint32_t i=0; i< n_half_nodes*2 + n_routers; ++i){
     positionAlloc->Add (Vector (0.0 + i, 0.0, 0.0));
   }
   
@@ -245,29 +363,40 @@ main (int argc, char *argv[])
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
   /* Install TCP Receiver on the access point */
-  PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), 9));
-  ApplicationContainer sinkApp = sinkHelper.Install (apWifiNode);
+  uint16_t sinkPort = 8080;
+  Address sinkAddress (InetSocketAddress (staInterface_2.GetAddress (0), sinkPort));
+
+  PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
+  ApplicationContainer sinkApp = sinkHelper.Install (staWifiNodes_2.Get(0));
   sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
   /* Install TCP/UDP Transmitter on the station */
-  OnOffHelper server ("ns3::TcpSocketFactory", (InetSocketAddress (apInterface.GetAddress (0), 9)));
-  server.SetAttribute ("PacketSize", UintegerValue (payloadSize));
-  server.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  server.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  server.SetAttribute ("DataRate", DataRateValue (DataRate (dataRate)));
-  ApplicationContainer serverApp = server.Install (staWifiNode);
+  // OnOffHelper server ("ns3::TcpSocketFactory", (InetSocketAddress (apInterface.GetAddress (0), 9)));
+  // server.SetAttribute ("PacketSize", UintegerValue (payloadSize));
+  // server.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  // server.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  // server.SetAttribute ("DataRate", DataRateValue (DataRate (dataRate)));
+  // ApplicationContainer serverApp = server.Install (staWifiNode);
+
+  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (staWifiNodes_1.Get (0), TcpSocketFactory::GetTypeId ());
+
+  Ptr<MyApp> serverApp = CreateObject<MyApp> ();
+  serverApp->Setup(ns3TcpSocket, sinkAddress, 1040, 1000, DataRate(dataRate));
+  staWifiNodes_1.Get(0)->AddApplication(serverApp);
 
   /* Start Applications */
   sinkApp.Start (Seconds (0.0));
-  serverApp.Start (Seconds (1.0));
+  serverApp->SetStartTime (Seconds (1.0));
   Simulator::Schedule (Seconds (1.1), &CalculateThroughput);
 
   /* Enable Traces */
   if (pcapTracing)
     {
       wifiPhy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-      wifiPhy.EnablePcap ("AccessPoint", apDevice);
-      wifiPhy.EnablePcap ("Station", staDevices);
+      wifiPhy.EnablePcap ("AccessPoint1", apDevice_1);
+      wifiPhy.EnablePcap ("AccessPoint2", apDevice_2);
+      wifiPhy.EnablePcap ("Station1", staDevices_1);
+      wifiPhy.EnablePcap ("Station2", staDevices_2);
     }
 
   /* Start Simulation */
