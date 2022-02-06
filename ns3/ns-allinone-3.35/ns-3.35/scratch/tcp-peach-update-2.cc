@@ -216,11 +216,11 @@ int
 main (int argc, char *argv[])
 {
   uint32_t payloadSize = 1042;                       /* Transport layer payload size in bytes. */
-  uint32_t n_packets = 5000;
+  uint32_t n_packets = 50000;
   std::string dataRate = "100Mbps";
   std::string tcpVariant = "TcpNewReno";             /* TCP variant type. */
   // std::string phyRate = "HtMcs7";                    /* Physical layer bitrate. */
-  double simulationTime = 5;                        /* Simulation time in seconds. */
+  double simulationTime = 10;                        /* Simulation time in seconds. */
   bool pcapTracing = false;                           /* PCAP Tracing is enabled or not. */
   uint32_t n_half_nodes = 4;                       /* number of total nodes */
   uint32_t n_total_flows = 4;                         /* number of total flows */
