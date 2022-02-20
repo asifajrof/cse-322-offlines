@@ -280,7 +280,7 @@ int main (int argc, char** argv)
 
   Simulator::Run ();
 
-  monitor->SerializeToXmlFile("task-a-2-flow.xml", true, true);
+  monitor->SerializeToXmlFile("./output-files/task-a-2-flow.xml", true, true);
 
   Simulator::Destroy ();
   return 0;
