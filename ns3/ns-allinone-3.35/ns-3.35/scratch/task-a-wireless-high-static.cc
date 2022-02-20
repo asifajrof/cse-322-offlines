@@ -18,7 +18,7 @@
  * Author: Hany Assasa <hany.assasa@gmail.com>
  * Editor: Asif Ajrof <1705092@ugrad.cse.buet.ac.bd>
 .*
- * This is a simple example to test TCP over 802.11n (with MPDU aggregation enabled).
+ * This is a simple example to test TCP over 802.11n.
  *
  * Network topology:
  *
@@ -56,7 +56,7 @@
 
 #include "ns3/flow-monitor-module.h"
 
-NS_LOG_COMPONENT_DEFINE ("tcp-peach-update-2");
+NS_LOG_COMPONENT_DEFINE ("task-a-wireless-high-static");
 
 using namespace ns3;
 
@@ -183,23 +183,23 @@ MyApp::ScheduleTx (void)
     }
 }
 
-static void
-CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
-{
-  // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
-  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
-}
+// static void
+// CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
+// {
+//   // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
+//   *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
+// }
 
-static void
-Rx (Ptr<OutputStreamWrapper> file, Ptr< const Packet > packet, const Address &address)
-{
-  // NS_LOG_UNCOND ("Rx at " << Simulator::Now ().GetSeconds ());
-  // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << packet->GetSize());
-  *file->GetStream () << Simulator::Now () << "\t" << packet->GetSize() * 8.0 / 1024 << std::endl;
-}
+// static void
+// Rx (Ptr<OutputStreamWrapper> file, Ptr< const Packet > packet, const Address &address)
+// {
+//   // NS_LOG_UNCOND ("Rx at " << Simulator::Now ().GetSeconds ());
+//   // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << packet->GetSize());
+//   *file->GetStream () << Simulator::Now () << "\t" << packet->GetSize() * 8.0 / 1024 << std::endl;
+// }
 
-Ptr<PacketSink> sink;                         /* Pointer to the packet sink application */
-uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
+// Ptr<PacketSink> sink;                         /* Pointer to the packet sink application */
+// uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
 
 
 // void
@@ -215,16 +215,22 @@ uint64_t lastTotalRx = 0;                     /* The value of the last total rec
 int
 main (int argc, char *argv[])
 {
-  uint32_t payloadSize = 1042;                       /* Transport layer payload size in bytes. */
+  uint32_t payloadSize = 1024;                       /* Transport layer payload size in bytes. */
   uint32_t n_packets = 50000;
-  std::string dataRate = "100Mbps";
+  std::string dataRate = "20Mbps";
+  std::string p2pDataRate = "2Mbps";
   std::string tcpVariant = "TcpNewReno";             /* TCP variant type. */
-  // std::string phyRate = "HtMcs7";                    /* Physical layer bitrate. */
-  double simulationTime = 10;                        /* Simulation time in seconds. */
-  bool pcapTracing = false;                           /* PCAP Tracing is enabled or not. */
-  uint32_t n_half_nodes = 4;                       /* number of total nodes */
-  uint32_t n_total_flows = 4;                         /* number of total flows */
+  std::string recovery = "ns3::TcpClassicRecovery";
+  double simulationTime = 20;                        /* Simulation time in seconds. */
+  // bool pcapTracing = false;                           /* PCAP Tracing is enabled or not. */
+  uint32_t n_half_nodes = 5;                       /* number of total nodes */
+  uint32_t n_total_flows = 10;                         /* number of total flows */
   uint32_t n_routers = 2;
+  // coverage area
+  double deltaX = 1;
+  double deltaY = 2;
+  uint32_t gridWidth = 10;
+  double coverageMaxRange = 50;
 
   tcpVariant = std::string ("ns3::") + tcpVariant;
   // Select TCP variant
@@ -243,6 +249,7 @@ main (int argc, char *argv[])
     }
 
   /* Configure TCP Options */
+  Config::SetDefault ("ns3::TcpL4Protocol::RecoveryType", TypeIdValue (TypeId::LookupByName (recovery)));
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (payloadSize));
 
 
@@ -250,15 +257,15 @@ main (int argc, char *argv[])
   p2pNodes.Create (n_routers);
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue (p2pDataRate));
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
 
   NetDeviceContainer p2pDevices;
   p2pDevices = pointToPoint.Install (p2pNodes);
 
-  Ptr<RateErrorModel> emp2p = CreateObject<RateErrorModel> ();
-  emp2p->SetAttribute ("ErrorRate", DoubleValue (0.00001));
-  p2pDevices.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (emp2p));
+  Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
+  em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
+  p2pDevices.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
 
   NodeContainer staWifiNodes_1;
   staWifiNodes_1.Create (n_half_nodes);
@@ -271,6 +278,9 @@ main (int argc, char *argv[])
   /* Set up Legacy Channel */
   YansWifiChannelHelper wifiChannel_1 = YansWifiChannelHelper::Default ();
   YansWifiChannelHelper wifiChannel_2 = YansWifiChannelHelper::Default ();
+
+  wifiChannel_1.AddPropagationLoss("ns3::RangePropagationLossModel", "MaxRange", DoubleValue(coverageMaxRange));
+  wifiChannel_2.AddPropagationLoss("ns3::RangePropagationLossModel", "MaxRange", DoubleValue(coverageMaxRange));
 
   /* Setup Physical Layer */
   YansWifiPhyHelper wifiPhy_1;
@@ -321,11 +331,6 @@ main (int argc, char *argv[])
   // Config::Set("/NodeList/2/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/PostReceptionErrorModel", PointerValue(em));
   // Config::Set("/NodeList/3/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/PostReceptionErrorModel", PointerValue(em));
 
-  // for(uint32_t i=0; i<n_half_nodes; ++i){
-  //   staDevices_1.Get (i)->SetAttribute ("Phy/$ns3::YansWifiPhy/PostReceptionErrorModel", PointerValue (em));
-  //   staDevices_2.Get (i)->SetAttribute ("Phy/$ns3::YansWifiPhy/PostReceptionErrorModel", PointerValue (em));
-  // }
-
   /* Configure AP */
   wifiMac_1.SetType ("ns3::ApWifiMac",
                    "Ssid", SsidValue (ssid));
@@ -345,9 +350,9 @@ main (int argc, char *argv[])
   mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
                                     "MinX", DoubleValue (0.0),
                                     "MinY", DoubleValue (0.0),
-                                    "DeltaX", DoubleValue (5.0),
-                                    "DeltaY", DoubleValue (10.0),
-                                    "GridWidth", UintegerValue (3),
+                                    "DeltaX", DoubleValue (deltaX),
+                                    "DeltaY", DoubleValue (deltaY),
+                                    "GridWidth", UintegerValue (gridWidth),
                                     "LayoutType", StringValue ("RowFirst"));
 
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -414,48 +419,49 @@ main (int argc, char *argv[])
 
   for(uint32_t i=0; i<n_total_flows; ++i){
     uint16_t sinkPort = 8080 + 10 * i;
-    Address sinkAddress (InetSocketAddress (staInterface_2.GetAddress (i), sinkPort));
+    uint32_t index = i%n_half_nodes;
+    Address sinkAddress (InetSocketAddress (staInterface_2.GetAddress (index), sinkPort));
     PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-    ApplicationContainer sinkApp = sinkHelper.Install (staWifiNodes_2.Get(i));
-    sink = StaticCast<PacketSink> (sinkApp.Get (0));
+    ApplicationContainer sinkApp = sinkHelper.Install (staWifiNodes_2.Get(index));
+    // sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
     /* Start Applications */
     sinkApp.Start (Seconds (0.));
     sinkApp.Stop (Seconds(simulationTime));
 
-    Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (staWifiNodes_1.Get (i), TcpSocketFactory::GetTypeId ());
+    Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (staWifiNodes_1.Get (index), TcpSocketFactory::GetTypeId ());
     Ptr<MyApp> serverApp = CreateObject<MyApp> ();
     serverApp->Setup(ns3TcpSocket, sinkAddress, payloadSize, n_packets, DataRate(dataRate));
-    staWifiNodes_1.Get(i)->AddApplication(serverApp);
+    staWifiNodes_1.Get(index)->AddApplication(serverApp);
 
     /* Start Applications */
     serverApp->SetStartTime (Seconds (1.));
     serverApp->SetStopTime (Seconds(simulationTime));
 
-    AsciiTraceHelper asciiTraceHelper;
-    Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("tcp-peach-update-2-" + std::to_string(i) + ".cwnd");
-    ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
+    // AsciiTraceHelper asciiTraceHelper;
+    // Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("./output-files/task-a-1-" + std::to_string(i) + ".cwnd");
+    // ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
 
-    // PcapHelper pcapHelper;
-    // Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("tcp-peach-update-2-rx-packets-" + std::to_string(i) + ".pcap", std::ios::out, PcapHelper::DLT_PPP);
-    AsciiTraceHelper asciiTraceHelperRx;
-    Ptr<OutputStreamWrapper> file = asciiTraceHelperRx.CreateFileStream ("tcp-peach-update-2-Rx-" + std::to_string(i) + ".txt");
-    sink->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&Rx, file));
+    // // PcapHelper pcapHelper;
+    // // Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("tcp-peach-update-2-rx-packets-" + std::to_string(i) + ".pcap", std::ios::out, PcapHelper::DLT_PPP);
+    // AsciiTraceHelper asciiTraceHelperRx;
+    // Ptr<OutputStreamWrapper> file = asciiTraceHelperRx.CreateFileStream ("./output-files/task-a-1-Rx-" + std::to_string(i) + ".txt");
+    // sink->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&Rx, file));
   }
 
 
   // Simulator::Schedule (Seconds (1.1), &CalculateThroughput);
 
   /* Enable Traces */
-  if (pcapTracing)
-    {
-      wifiPhy_1.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-      wifiPhy_2.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-      wifiPhy_1.EnablePcap ("AccessPoint1", apDevice_1);
-      wifiPhy_2.EnablePcap ("AccessPoint2", apDevice_2);
-      wifiPhy_1.EnablePcap ("Station1", staDevices_1);
-      wifiPhy_2.EnablePcap ("Station2", staDevices_2);
-    }
+  // if (pcapTracing)
+  //   {
+  //     wifiPhy_1.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
+  //     wifiPhy_2.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
+  //     wifiPhy_1.EnablePcap ("AccessPoint1", apDevice_1);
+  //     wifiPhy_2.EnablePcap ("AccessPoint2", apDevice_2);
+  //     wifiPhy_1.EnablePcap ("Station1", staDevices_1);
+  //     wifiPhy_2.EnablePcap ("Station2", staDevices_2);
+  //   }
   
   // AsciiTraceHelper asciiTraceHelper;
   // Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("tcp-peach-update-2.cwnd");
@@ -529,7 +535,7 @@ main (int argc, char *argv[])
   NS_LOG_UNCOND("End to end jitter delay: "<< jitter);
   NS_LOG_UNCOND("Total Flow ID: " << j);
 
-  monitor->SerializeToXmlFile("tcp-peach-test_flow.xml", true, true);
+  monitor->SerializeToXmlFile("./output-files/task-a-1-flow.xml", true, true);
 
   // double averageThroughput = ((sink->GetTotalRx () * 8) / (1e6 * simulationTime));
 
