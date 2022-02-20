@@ -190,34 +190,30 @@ int main (int argc, char** argv)
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (tcpVariant)));
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (payloadSize));
   Config::SetDefault ("ns3::TcpL4Protocol::RecoveryType", TypeIdValue (TypeId::LookupByName (recovery)));
+  // coverage area
+  double deltaX = 80;
+  double deltaY = 80;
+  uint32_t gridWidth = 10;
+  double coverageMaxRange = 100;
 
-  // Config::SetDefault ("ns3::RangePropagationLossModel::MaxRange", DoubleValue (1)); // doesn't change anything
   // Config::SetDefault ("ns3::LogDistancePropagationLossModel::Exponent", DoubleValue (5)); 
-
-  // Ptr<LrWpanErrorModel>  lrWpanError = CreateObject<LrWpanErrorModel> ();
-  // lrWpanError->SetAttribute ("ErrorRate", DoubleValue (0.00001));
-  // Config::SetDefault ("ns3::LrWpanErrorModel", PointerValue (lrWpanError));
 
   NodeContainer wsnNodes;
   wsnNodes.Create (nWsnNodes);
-
-  // NodeContainer wiredNodes;
-  // wiredNodes.Create (1);
-  // wiredNodes.Add (wsnNodes.Get (0));
 
   MobilityHelper mobility;
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
                                  "MinX", DoubleValue (0.0),
                                  "MinY", DoubleValue (0.0),
-                                 "DeltaX", DoubleValue (80),
-                                 "DeltaY", DoubleValue (80),
-                                 "GridWidth", UintegerValue (10),
+                                 "DeltaX", DoubleValue (deltaX),
+                                 "DeltaY", DoubleValue (deltaY),
+                                 "GridWidth", UintegerValue (gridWidth),
                                  "LayoutType", StringValue ("RowFirst"));
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (wsnNodes);
 
-  Config::SetDefault ("ns3::RangePropagationLossModel::MaxRange", DoubleValue (100));
+  Config::SetDefault ("ns3::RangePropagationLossModel::MaxRange", DoubleValue (coverageMaxRange));
   Ptr<SingleModelSpectrumChannel> channel = CreateObject<SingleModelSpectrumChannel> ();
   Ptr<RangePropagationLossModel> propModel = CreateObject<RangePropagationLossModel> ();
   channel->AddPropagationLossModel (propModel);
@@ -235,22 +231,11 @@ int main (int argc, char** argv)
 
   InternetStackHelper internetv6;
   internetv6.Install (wsnNodes);
-  // internetv6.Install (wiredNodes.Get (0));
 
   SixLowPanHelper sixLowPanHelper;
   NetDeviceContainer sixLowPanDevices = sixLowPanHelper.Install (lrwpanDevices);
 
-  // CsmaHelper csmaHelper;
-  // NetDeviceContainer csmaDevices = csmaHelper.Install (wiredNodes);
-  // csmaDevices.Get(0)->SetAttribute("ErrorModel", PointerValue(lrWpanError));
-
   Ipv6AddressHelper ipv6;
-  // ipv6.SetBase (Ipv6Address ("2001:cafe::"), Ipv6Prefix (64));
-  // Ipv6InterfaceContainer wiredDeviceInterfaces;
-  // wiredDeviceInterfaces = ipv6.Assign (csmaDevices);
-  // wiredDeviceInterfaces.SetForwarding (1, true);
-  // wiredDeviceInterfaces.SetDefaultRouteInAllNodes (1);
-
   ipv6.SetBase (Ipv6Address ("2001:f00d::"), Ipv6Prefix (64));
   Ipv6InterfaceContainer wsnDeviceInterfaces;
   wsnDeviceInterfaces = ipv6.Assign (sixLowPanDevices);
@@ -265,15 +250,14 @@ int main (int argc, char** argv)
     }
   
   for(uint32_t i=0; i<n_total_flows; ++i){
-    uint16_t sinkPort = 8080 + 10 * i;
+    uint16_t sinkPort = 8080 + i;
     uint32_t index = i%nWsnNodes;
-    // Address sinkAddress (Inet6SocketAddress (wiredDeviceInterfaces.GetAddress (0, 1), sinkPort));
+    if(index == 0){
+      index = nWsnNodes-1;
+    }
     Address sinkAddress (Inet6SocketAddress (wsnDeviceInterfaces.GetAddress (0, 1), sinkPort));
     PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", Inet6SocketAddress (Ipv6Address::GetAny (), sinkPort));
-    // PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkAddress);
-    // ApplicationContainer sinkApp = sinkHelper.Install (wiredNodes.Get(0));
     ApplicationContainer sinkApp = sinkHelper.Install (wsnNodes.Get(0));
-    // sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
     /* Start Applications */
     sinkApp.Start (Seconds (0.));
@@ -289,13 +273,6 @@ int main (int argc, char** argv)
     serverApp->SetStopTime (Seconds(simulationTime));
   }
 
-  // AsciiTraceHelper ascii;
-  // lrWpanHelper.EnableAsciiAll (ascii.CreateFileStream ("Ping-6LoW-lr-wpan-meshunder-lr-wpan.tr"));
-  // lrWpanHelper.EnablePcapAll (std::string ("Ping-6LoW-lr-wpan-meshunder-lr-wpan"), true);
-
-  // csmaHelper.EnableAsciiAll (ascii.CreateFileStream ("Ping-6LoW-lr-wpan-meshunder-csma.tr"));
-  // csmaHelper.EnablePcapAll (std::string ("Ping-6LoW-lr-wpan-meshunder-csma"), true);
-
   Simulator::Stop (Seconds (simulationTime));
 
   FlowMonitorHelper flowmon;                              
@@ -306,6 +283,6 @@ int main (int argc, char** argv)
   monitor->SerializeToXmlFile("task-a-2-flow.xml", true, true);
 
   Simulator::Destroy ();
-
+  return 0;
 }
 
