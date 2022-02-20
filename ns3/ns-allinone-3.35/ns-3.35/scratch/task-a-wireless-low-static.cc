@@ -179,22 +179,22 @@ int main (int argc, char** argv)
       LogComponentEnable ("SixLowPanNetDevice", LOG_LEVEL_ALL);
     }
   
-  uint32_t nWsnNodes = 4;
-  uint32_t n_total_flows = 4;                         /* number of total flows */
+  uint32_t nWsnNodes = 5;
+  uint32_t n_total_flows = 5;                         /* number of total flows */
   uint32_t payloadSize = 128;                       /* Transport layer payload size in bytes. */
   uint32_t n_packets = 50000;
-  std::string dataRate = "100Mbps";
-  double simulationTime = 30;                        /* Simulation time in seconds. */
+  std::string dataRate = "500kbps";
+  double simulationTime = 20;                        /* Simulation time in seconds. */
   std::string tcpVariant = "ns3::TcpNewReno";             /* TCP variant type. */
   std::string recovery = "ns3::TcpClassicRecovery";
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (tcpVariant)));
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (payloadSize));
   Config::SetDefault ("ns3::TcpL4Protocol::RecoveryType", TypeIdValue (TypeId::LookupByName (recovery)));
   // coverage area
-  double deltaX = 80;
-  double deltaY = 80;
+  double deltaX = 1;
+  double deltaY = 1;
   uint32_t gridWidth = 10;
-  double coverageMaxRange = 100;
+  double coverageMaxRange = 10;
 
   // Config::SetDefault ("ns3::LogDistancePropagationLossModel::Exponent", DoubleValue (5)); 
 

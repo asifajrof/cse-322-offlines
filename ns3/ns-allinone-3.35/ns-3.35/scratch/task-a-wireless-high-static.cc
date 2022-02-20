@@ -187,19 +187,20 @@ int
 main (int argc, char *argv[])
 {
   uint32_t payloadSize = 1024;                       /* Transport layer payload size in bytes. */
-  uint32_t n_packets = 50000;
-  std::string dataRate = "20Mbps";
+  uint32_t n_packets = 50000;                        /* total Number of packets per flow. */
+  /* packet/sec -> 128 then datarate is 1 Mbps */
+  std::string dataRate = "5Mbps";
   std::string p2pDataRate = "2Mbps";
   std::string tcpVariant = "ns3::TcpNewReno";             /* TCP variant type. */
   std::string recovery = "ns3::TcpClassicRecovery";
   double simulationTime = 20;                        /* Simulation time in seconds. */
   // bool pcapTracing = false;                           /* PCAP Tracing is enabled or not. */
-  uint32_t n_half_nodes = 5;                       /* number of total nodes */
+  uint32_t n_half_nodes = 20;                       /* number of total nodes */
   uint32_t n_total_flows = 10;                         /* number of total flows */
   uint32_t n_routers = 2;
   // coverage area
   double deltaX = 1;
-  double deltaY = 2;
+  double deltaY = 1;
   uint32_t gridWidth = 10;
   double coverageMaxRange = 50;
   // Select TCP variant
@@ -328,7 +329,7 @@ main (int argc, char *argv[])
   staInterface_2 = address.Assign (staDevices_2);
 
   /* Populate routing table */
-  Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+  // Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
   for(uint32_t i=0; i<n_total_flows; ++i){
     uint16_t sinkPort = 8080 + i;
