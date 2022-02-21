@@ -56,7 +56,7 @@
 
 #include "ns3/flow-monitor-module.h"
 
-NS_LOG_COMPONENT_DEFINE ("task-a-wireless-high-static");
+NS_LOG_COMPONENT_DEFINE ("task-b-tcp-peach");
 
 using namespace ns3;
 
@@ -183,6 +183,25 @@ MyApp::ScheduleTx (void)
     }
 }
 
+static void
+CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
+{
+  // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
+  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
+}
+
+static void
+Rx (Ptr<OutputStreamWrapper> file, Ptr< const Packet > packet, const Address &address)
+{
+  // NS_LOG_UNCOND ("Rx at " << Simulator::Now ().GetSeconds ());
+  // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << packet->GetSize());
+  *file->GetStream () << Simulator::Now () << "\t" << packet->GetSize() * 8.0 / 1024 << std::endl;
+}
+
+Ptr<PacketSink> sink;                         /* Pointer to the packet sink application */
+uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
+
+
 int
 main (int argc, char *argv[])
 {
@@ -202,7 +221,7 @@ main (int argc, char *argv[])
   double deltaX = 1;
   double deltaY = 1;
   uint32_t gridWidth = 10;
-  double coverageMaxRange = 50;
+  double coverageMaxRange = 20;
   // Select TCP variant
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (tcpVariant)));
   /* Configure TCP Options */
@@ -337,6 +356,7 @@ main (int argc, char *argv[])
     Address sinkAddress (InetSocketAddress (staInterface_2.GetAddress (index), sinkPort));
     PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
     ApplicationContainer sinkApp = sinkHelper.Install (staWifiNodes_2.Get(index));
+    sink = StaticCast<PacketSink> (sinkApp.Get (0));
 
     /* Start Applications */
     sinkApp.Start (Seconds (0.));
@@ -350,6 +370,16 @@ main (int argc, char *argv[])
     /* Start Applications */
     serverApp->SetStartTime (Seconds (1.));
     serverApp->SetStopTime (Seconds(simulationTime));
+
+    AsciiTraceHelper asciiTraceHelper;
+    Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("./output-files/tcp-peach-update-2-" + std::to_string(i) + ".cwnd");
+    ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
+
+    // PcapHelper pcapHelper;
+    // Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("tcp-peach-update-2-rx-packets-" + std::to_string(i) + ".pcap", std::ios::out, PcapHelper::DLT_PPP);
+    AsciiTraceHelper asciiTraceHelperRx;
+    Ptr<OutputStreamWrapper> file = asciiTraceHelperRx.CreateFileStream ("./output-files/tcp-peach-update-2-Rx-" + std::to_string(i) + ".txt");
+    sink->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&Rx, file));
   }
 
   /* Start Simulation */
