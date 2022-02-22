@@ -202,7 +202,7 @@ main (int argc, char *argv[])
   double deltaX = 1;
   double deltaY = 1;
   uint32_t gridWidth = 10;
-  double coverageMaxRange = 50;
+  double coverageMaxRange = 10;
   // Select TCP variant
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (tcpVariant)));
   /* Configure TCP Options */
@@ -361,63 +361,6 @@ main (int argc, char *argv[])
   Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
   Simulator::Run ();
-
-
-    // ------------------------ Network Performance Calculation ------------------------ //
-
-  uint32_t sentPackets = 0;         // added
-  uint32_t receivedPackets = 0;     // added
-  uint32_t lostPackets = 0;         // added
-
-  int j = 0;
-  float avgThroughput = 0;
-  Time jitter;
-  Time delay;
-
-  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier());
-  std::map<FlowId, FlowMonitor::FlowStats> stats =  monitor->GetFlowStats();
-
-  for(std::map<FlowId, FlowMonitor::FlowStats>::const_iterator iter = stats.begin(); iter != stats.end(); iter++)
-  {
-    Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(iter->first);
-
-    NS_LOG_UNCOND("\nFlow Id: " << iter->first);
-    NS_LOG_UNCOND("Src Addr: " << t.sourceAddress);
-    NS_LOG_UNCOND("Dst Addr: " << t.destinationAddress);
-    NS_LOG_UNCOND("Sent Packets: " << iter->second.txPackets);
-    NS_LOG_UNCOND("Received Packets: " << iter->second.rxPackets);
-    NS_LOG_UNCOND("Lost Packets: " << iter->second.txPackets - iter->second.rxPackets);
-    // NS_LOG_UNCOND("Lost Packets: " << iter->second.lostPackets);
-    NS_LOG_UNCOND("Packet Delivery Ratio: " << iter->second.rxPackets*100.0/iter->second.txPackets << "%");
-    NS_LOG_UNCOND("Packet Loss Ratio: " << (iter->second.txPackets - iter->second.rxPackets)*100.0/iter->second.txPackets << "%");
-    // NS_LOG_UNCOND("Packet Loss Ratio: " << (iter->second.lostPackets)*100/iter->second.txPackets << "%");
-    NS_LOG_UNCOND("Delay: " << iter->second.delaySum);
-    NS_LOG_UNCOND("Jitter: " << iter->second.jitterSum);
-    NS_LOG_UNCOND("Throughput: " << iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds() - iter->second.timeFirstTxPacket.GetSeconds())/1024 << " kbps");
-
-
-    sentPackets += iter->second.txPackets;
-    receivedPackets += iter->second.rxPackets;
-    lostPackets += (iter->second.txPackets - iter->second.rxPackets);
-    // lostPackets += (iter->second.lostPackets);
-    avgThroughput += iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds() - iter->second.timeFirstTxPacket.GetSeconds())/1024;
-    delay += iter->second.delaySum;
-    jitter += iter->second.jitterSum;
-
-    j++;
-  }
-
-  avgThroughput = avgThroughput/j;
-  NS_LOG_UNCOND("\n--------------- Simulation Stats ------------"<<std::endl);
-  NS_LOG_UNCOND("Total sent packets: " << sentPackets);
-  NS_LOG_UNCOND("Total Received Packets: " << receivedPackets);
-  NS_LOG_UNCOND("Total Lost Packets: " << lostPackets);
-  NS_LOG_UNCOND("Packet Loss Ratio: " << lostPackets*100.0/sentPackets << "%");
-  NS_LOG_UNCOND("Packet Delivery Ratio: " << receivedPackets * 100.0 /sentPackets << "%");
-  NS_LOG_UNCOND("Average Throughput: " << avgThroughput << " kbps");
-  NS_LOG_UNCOND("End to end delay: "<< delay);
-  NS_LOG_UNCOND("End to end jitter delay: "<< jitter);
-  NS_LOG_UNCOND("Total Flow ID: " << j);
 
   monitor->SerializeToXmlFile("./output-files/task-a-1-flow.xml", true, true);
 

@@ -106,6 +106,7 @@
 #include "tcp-option-ts.h"
 #include "tcp-option-winscale.h"
 #include "tcp-option.h"
+#include "tcp-peach.h"
 #include "tcp-prr-recovery.h"
 #include "tcp-rate-ops.h"
 #include "tcp-recovery-ops.h"

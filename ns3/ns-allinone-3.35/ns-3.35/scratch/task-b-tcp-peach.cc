@@ -56,7 +56,7 @@
 
 #include "ns3/flow-monitor-module.h"
 
-NS_LOG_COMPONENT_DEFINE ("task-b-tcp-peach");
+NS_LOG_COMPONENT_DEFINE ("task-b-modification-test");
 
 using namespace ns3;
 
@@ -190,14 +190,6 @@ CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
   *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
 }
 
-static void
-Rx (Ptr<OutputStreamWrapper> file, Ptr< const Packet > packet, const Address &address)
-{
-  // NS_LOG_UNCOND ("Rx at " << Simulator::Now ().GetSeconds ());
-  // NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << packet->GetSize());
-  *file->GetStream () << Simulator::Now () << "\t" << packet->GetSize() * 8.0 / 1024 << std::endl;
-}
-
 Ptr<PacketSink> sink;                         /* Pointer to the packet sink application */
 uint64_t lastTotalRx = 0;                     /* The value of the last total received bytes */
 
@@ -210,12 +202,13 @@ main (int argc, char *argv[])
   /* packet/sec -> 128 then datarate is 1 Mbps */
   std::string dataRate = "5Mbps";
   std::string p2pDataRate = "2Mbps";
-  std::string tcpVariant = "ns3::TcpNewReno";             /* TCP variant type. */
+  // std::string tcpVariant = "ns3::TcpNewReno";             /* TCP variant type. */
+  std::string tcpVariant = "ns3::TcpPeach";             /* TCP variant type. */
   std::string recovery = "ns3::TcpClassicRecovery";
   double simulationTime = 20;                        /* Simulation time in seconds. */
   // bool pcapTracing = false;                           /* PCAP Tracing is enabled or not. */
-  uint32_t n_half_nodes = 20;                       /* number of total nodes */
-  uint32_t n_total_flows = 10;                         /* number of total flows */
+  uint32_t n_half_nodes = 5;                       /* number of total nodes */
+  uint32_t n_total_flows = 5;                         /* number of total flows */
   uint32_t n_routers = 2;
   // coverage area
   double deltaX = 1;
@@ -372,14 +365,8 @@ main (int argc, char *argv[])
     serverApp->SetStopTime (Seconds(simulationTime));
 
     AsciiTraceHelper asciiTraceHelper;
-    Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("./output-files/tcp-peach-update-2-" + std::to_string(i) + ".cwnd");
+    Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("./output-files/task-b-peach-" + std::to_string(i) + ".cwnd");
     ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
-
-    // PcapHelper pcapHelper;
-    // Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("tcp-peach-update-2-rx-packets-" + std::to_string(i) + ".pcap", std::ios::out, PcapHelper::DLT_PPP);
-    AsciiTraceHelper asciiTraceHelperRx;
-    Ptr<OutputStreamWrapper> file = asciiTraceHelperRx.CreateFileStream ("./output-files/tcp-peach-update-2-Rx-" + std::to_string(i) + ".txt");
-    sink->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&Rx, file));
   }
 
   /* Start Simulation */
@@ -392,64 +379,7 @@ main (int argc, char *argv[])
 
   Simulator::Run ();
 
-
-    // ------------------------ Network Performance Calculation ------------------------ //
-
-  uint32_t sentPackets = 0;         // added
-  uint32_t receivedPackets = 0;     // added
-  uint32_t lostPackets = 0;         // added
-
-  int j = 0;
-  float avgThroughput = 0;
-  Time jitter;
-  Time delay;
-
-  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier());
-  std::map<FlowId, FlowMonitor::FlowStats> stats =  monitor->GetFlowStats();
-
-  for(std::map<FlowId, FlowMonitor::FlowStats>::const_iterator iter = stats.begin(); iter != stats.end(); iter++)
-  {
-    Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(iter->first);
-
-    NS_LOG_UNCOND("\nFlow Id: " << iter->first);
-    NS_LOG_UNCOND("Src Addr: " << t.sourceAddress);
-    NS_LOG_UNCOND("Dst Addr: " << t.destinationAddress);
-    NS_LOG_UNCOND("Sent Packets: " << iter->second.txPackets);
-    NS_LOG_UNCOND("Received Packets: " << iter->second.rxPackets);
-    NS_LOG_UNCOND("Lost Packets: " << iter->second.txPackets - iter->second.rxPackets);
-    // NS_LOG_UNCOND("Lost Packets: " << iter->second.lostPackets);
-    NS_LOG_UNCOND("Packet Delivery Ratio: " << iter->second.rxPackets*100.0/iter->second.txPackets << "%");
-    NS_LOG_UNCOND("Packet Loss Ratio: " << (iter->second.txPackets - iter->second.rxPackets)*100.0/iter->second.txPackets << "%");
-    // NS_LOG_UNCOND("Packet Loss Ratio: " << (iter->second.lostPackets)*100/iter->second.txPackets << "%");
-    NS_LOG_UNCOND("Delay: " << iter->second.delaySum);
-    NS_LOG_UNCOND("Jitter: " << iter->second.jitterSum);
-    NS_LOG_UNCOND("Throughput: " << iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds() - iter->second.timeFirstTxPacket.GetSeconds())/1024 << " kbps");
-
-
-    sentPackets += iter->second.txPackets;
-    receivedPackets += iter->second.rxPackets;
-    lostPackets += (iter->second.txPackets - iter->second.rxPackets);
-    // lostPackets += (iter->second.lostPackets);
-    avgThroughput += iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds() - iter->second.timeFirstTxPacket.GetSeconds())/1024;
-    delay += iter->second.delaySum;
-    jitter += iter->second.jitterSum;
-
-    j++;
-  }
-
-  avgThroughput = avgThroughput/j;
-  NS_LOG_UNCOND("\n--------------- Simulation Stats ------------"<<std::endl);
-  NS_LOG_UNCOND("Total sent packets: " << sentPackets);
-  NS_LOG_UNCOND("Total Received Packets: " << receivedPackets);
-  NS_LOG_UNCOND("Total Lost Packets: " << lostPackets);
-  NS_LOG_UNCOND("Packet Loss Ratio: " << lostPackets*100.0/sentPackets << "%");
-  NS_LOG_UNCOND("Packet Delivery Ratio: " << receivedPackets * 100.0 /sentPackets << "%");
-  NS_LOG_UNCOND("Average Throughput: " << avgThroughput << " kbps");
-  NS_LOG_UNCOND("End to end delay: "<< delay);
-  NS_LOG_UNCOND("End to end jitter delay: "<< jitter);
-  NS_LOG_UNCOND("Total Flow ID: " << j);
-
-  monitor->SerializeToXmlFile("./output-files/task-a-1-flow.xml", true, true);
+  monitor->SerializeToXmlFile("./output-files/task-b-peach-flow.xml", true, true);
 
   Simulator::Destroy ();
   
